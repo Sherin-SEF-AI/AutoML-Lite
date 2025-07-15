@@ -2,6 +2,7 @@
 
 **Automated Machine Learning Made Simple**
 
+[![PyPI version](https://badge.fury.io/py/automl-lite.svg)](https://badge.fury.io/py/automl-lite)
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen.svg)]()
