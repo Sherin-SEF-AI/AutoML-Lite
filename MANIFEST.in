@@ -1,0 +1,25 @@
+include README.md
+include LICENSE
+include CHANGELOG.md
+include CONTRIBUTING.md
+include requirements.txt
+include setup.py
+
+recursive-include src/automl_lite/templates *
+recursive-include src/automl_lite/static *
+recursive-include docs *
+
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+recursive-exclude * *.so
+recursive-exclude * .DS_Store
+recursive-exclude * .git*
+recursive-exclude * .venv*
+recursive-exclude * venv*
+recursive-exclude * env*
+recursive-exclude * .pytest_cache*
+recursive-exclude * htmlcov*
+recursive-exclude * .coverage*
+recursive-exclude * dist*
+recursive-exclude * build*
+recursive-exclude * *.egg-info* 
