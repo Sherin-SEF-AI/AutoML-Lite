@@ -161,7 +161,9 @@ Desktop.ini
 *.pdf
 test_*.py
 example_*.py
-demo_*.py
+
+# Allow demo files
+!demo_*.py
 
 # Model files (keep some for examples)
 !examples/*.pkl
