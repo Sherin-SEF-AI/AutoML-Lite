@@ -9,6 +9,14 @@
 
 A lightweight, production-ready automated machine learning library that simplifies the entire ML pipeline from data preprocessing to model deployment.
 
+## 🎬 Demo
+
+### AutoML Lite in Action
+![AutoML Lite Demo](automl-lite.gif)
+
+### Generated HTML Report
+![AutoML Lite Report](automl-lite-report.gif)
+
 ## 📋 Table of Contents
 
 - [Features](#-features)

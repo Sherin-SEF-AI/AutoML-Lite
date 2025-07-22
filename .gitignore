@@ -159,6 +159,9 @@ Desktop.ini
 *.jpg
 *.jpeg
 *.pdf
+
+# Allow GIF files for demos
+!*.gif
 test_*.py
 example_*.py
 
