@@ -17,9 +17,16 @@ from sklearn.ensemble import VotingClassifier, VotingRegressor
 from tqdm import tqdm
 
 from ..preprocessing.pipeline import PreprocessingPipeline
+from ..preprocessing.feature_engineering import AutoFeatureEngineer
 from ..models.selector import ModelSelector
+from ..models.deep_learning import DeepLearningModel
+from ..models.time_series import TimeSeriesForecaster
 from ..optimization.optimizer import HyperparameterOptimizer
 from ..visualization.reporter import ReportGenerator
+from ..interpretability.advanced_interpreter import AdvancedInterpreter
+from ..config.advanced_config import AutoMLConfig, ConfigManager
+from ..experiments.tracker import ExperimentTracker, ExperimentManager
+from ..ui.interactive_dashboard import AutoMLDashboard
 from ..utils.problem_detector import ProblemDetector
 from ..utils.validators import DataValidator
 from ..utils.logger import get_logger
@@ -52,14 +59,20 @@ class AutoMLite:
         enable_early_stopping: bool = True,
         enable_feature_selection: bool = True,
         enable_interpretability: bool = True,
+        enable_auto_feature_engineering: bool = True,
+        enable_deep_learning: bool = False,
+        enable_time_series: bool = False,
+        enable_experiment_tracking: bool = False,
         ensemble_method: str = "voting",
         top_k_models: int = 3,
         early_stopping_patience: int = 10,
         feature_selection_method: str = "mutual_info",
         feature_selection_threshold: float = 0.01,
+        config: Optional[AutoMLConfig] = None,
+        experiment_tracker: Optional[ExperimentTracker] = None,
     ) -> None:
         """
-        Initialize AutoML Lite.
+        Initialize AutoML Lite with production-ready features.
         
         Args:
             time_budget: Maximum time in seconds for training
@@ -72,27 +85,56 @@ class AutoMLite:
             enable_early_stopping: Whether to use early stopping
             enable_feature_selection: Whether to perform feature selection
             enable_interpretability: Whether to enable model interpretability
+            enable_auto_feature_engineering: Whether to enable auto feature engineering
+            enable_deep_learning: Whether to enable deep learning models
+            enable_time_series: Whether to enable time series forecasting
+            enable_experiment_tracking: Whether to enable experiment tracking
             ensemble_method: Ensemble method ('voting', 'stacking', 'blending')
             top_k_models: Number of top models to use in ensemble
             early_stopping_patience: Patience for early stopping
             feature_selection_method: Feature selection method
             feature_selection_threshold: Threshold for feature selection
+            config: Advanced configuration object
+            experiment_tracker: Experiment tracking object
         """
-        self.time_budget = time_budget
-        self.max_models = max_models
-        self.cv_folds = cv_folds
-        self.random_state = random_state
-        self.verbose = verbose
-        self.n_jobs = n_jobs
+        # Use config if provided, otherwise use default parameters
+        if config is not None:
+            self.config = config
+            self.time_budget = config.time_budget
+            self.max_models = config.max_models
+            self.cv_folds = config.cv_folds
+            self.random_state = config.random_state
+            self.verbose = config.verbose
+            self.n_jobs = config.n_jobs
+            self.enable_ensemble = config.enable_ensemble
+            self.enable_early_stopping = config.enable_early_stopping
+            self.enable_feature_selection = config.enable_feature_selection
+            self.enable_interpretability = config.enable_interpretability
+            self.enable_auto_feature_engineering = config.enable_auto_feature_engineering
+            self.ensemble_method = config.ensemble_method.value
+            self.top_k_models = config.top_k_models
+            self.early_stopping_patience = config.early_stopping_patience
+        else:
+            self.config = None
+            self.time_budget = time_budget
+            self.max_models = max_models
+            self.cv_folds = cv_folds
+            self.random_state = random_state
+            self.verbose = verbose
+            self.n_jobs = n_jobs
+            self.enable_ensemble = enable_ensemble
+            self.enable_early_stopping = enable_early_stopping
+            self.enable_feature_selection = enable_feature_selection
+            self.enable_interpretability = enable_interpretability
+            self.enable_auto_feature_engineering = enable_auto_feature_engineering
+            self.ensemble_method = ensemble_method
+            self.top_k_models = top_k_models
+            self.early_stopping_patience = early_stopping_patience
         
-        # Advanced features
-        self.enable_ensemble = enable_ensemble
-        self.enable_early_stopping = enable_early_stopping
-        self.enable_feature_selection = enable_feature_selection
-        self.enable_interpretability = enable_interpretability
-        self.ensemble_method = ensemble_method
-        self.top_k_models = top_k_models
-        self.early_stopping_patience = early_stopping_patience
+        # Additional features
+        self.enable_deep_learning = enable_deep_learning
+        self.enable_time_series = enable_time_series
+        self.enable_experiment_tracking = enable_experiment_tracking
         self.feature_selection_method = feature_selection_method
         self.feature_selection_threshold = feature_selection_threshold
         
@@ -103,6 +145,26 @@ class AutoMLite:
         self.model_selector = ModelSelector()
         self.optimizer = HyperparameterOptimizer()
         self.report_generator = ReportGenerator()
+        
+        # Production-ready components
+        if self.enable_auto_feature_engineering:
+            self.feature_engineer = AutoFeatureEngineer()
+        
+        if self.enable_interpretability:
+            self.interpreter = AdvancedInterpreter()
+        
+        if self.enable_deep_learning:
+            self.deep_learning_model = None  # Will be initialized when needed
+        
+        if self.enable_time_series:
+            self.time_series_forecaster = TimeSeriesForecaster()
+        
+        if self.enable_experiment_tracking:
+            self.experiment_tracker = experiment_tracker or ExperimentTracker()
+            self.experiment_manager = ExperimentManager()
+        
+        # Configuration management
+        self.config_manager = ConfigManager()
         
         # State variables
         self.is_fitted = False
@@ -150,6 +212,17 @@ class AutoMLite:
         if self.verbose:
             logger.info("Starting AutoML training...")
         
+        # Start experiment tracking if enabled
+        if self.enable_experiment_tracking and hasattr(self, 'experiment_tracker'):
+            self.experiment_tracker.start_run()
+            self.experiment_tracker.log_params({
+                'time_budget': self.time_budget,
+                'max_models': self.max_models,
+                'cv_folds': self.cv_folds,
+                'enable_ensemble': self.enable_ensemble,
+                'enable_feature_selection': self.enable_feature_selection
+            })
+        
         # Validate input data
         X = self._validate_input(X)
         if y is not None:
@@ -169,6 +242,12 @@ class AutoMLite:
         X_processed = self.preprocessor.fit_transform(
             X, y, self.problem_type, self.preprocessing_config
         )
+        
+        # Auto feature engineering
+        if self.enable_auto_feature_engineering and hasattr(self, 'feature_engineer'):
+            if self.verbose:
+                logger.info("Performing auto feature engineering...")
+            X_processed = self.feature_engineer.fit_transform(X_processed, y)
         
         # Feature selection
         if self.enable_feature_selection:
@@ -192,11 +271,47 @@ class AutoMLite:
                 X_processed, y
             )
         
-        # Model interpretability
-        if self.enable_interpretability:
-            self.interpretability_results = self._generate_interpretability_report(
-                X_processed, y
+        # Time series forecasting
+        if self.enable_time_series and hasattr(self, 'time_series_forecaster'):
+            if self.verbose:
+                logger.info("Training time series forecaster...")
+            self.time_series_forecaster.fit(self.best_model, X_processed, y)
+        
+        # Deep learning models
+        if self.enable_deep_learning:
+            if self.verbose:
+                logger.info("Training deep learning model...")
+            self.deep_learning_model = DeepLearningModel(
+                framework="tensorflow",
+                model_type="mlp",
+                output_units=len(np.unique(y)) if self.problem_type == "classification" else 1
             )
+            self.deep_learning_model.fit(X_processed, y)
+        
+        # Advanced interpretability
+        if self.enable_interpretability and hasattr(self, 'interpreter'):
+            if self.verbose:
+                logger.info("Performing advanced interpretability analysis...")
+            self.interpreter.fit(self.best_model, X_processed, y)
+            self.interpretability_results = self.interpreter.get_interpretability_report()
+        
+        # Log experiment results
+        if self.enable_experiment_tracking and hasattr(self, 'experiment_tracker'):
+            experiment_results = {
+                'best_score': self.best_score,
+                'training_time': time.time() - start_time,
+                'n_models_tried': len(self.training_history),
+                'config': {
+                    'time_budget': self.time_budget,
+                    'max_models': self.max_models,
+                    'cv_folds': self.cv_folds,
+                    'problem_type': self.problem_type
+                },
+                'leaderboard': self.leaderboard,
+                'feature_importance': self.feature_importance
+            }
+            self.experiment_tracker.log_automl_results(experiment_results)
+            self.experiment_tracker.end_run()
         
         self.is_fitted = True
         
@@ -207,6 +322,12 @@ class AutoMLite:
             logger.info(f"Best score: {self.best_score:.4f}")
             if self.ensemble_model:
                 logger.info("Ensemble model created successfully")
+            if self.enable_auto_feature_engineering:
+                logger.info("Auto feature engineering completed")
+            if self.enable_deep_learning:
+                logger.info("Deep learning model trained")
+            if self.enable_time_series:
+                logger.info("Time series forecasting model trained")
         
         return self
     
@@ -225,6 +346,10 @@ class AutoMLite:
         
         X = self._validate_input(X)
         X_processed = self.preprocessor.transform(X)
+        
+        # Apply auto feature engineering if enabled
+        if self.enable_auto_feature_engineering and hasattr(self, 'feature_engineer'):
+            X_processed = self.feature_engineer.transform(X_processed)
         
         # Apply feature selection if enabled
         if self.selected_features is not None:
@@ -254,6 +379,10 @@ class AutoMLite:
         
         X = self._validate_input(X)
         X_processed = self.preprocessor.transform(X)
+        
+        # Apply auto feature engineering if enabled
+        if self.enable_auto_feature_engineering and hasattr(self, 'feature_engineer'):
+            X_processed = self.feature_engineer.transform(X_processed)
         
         # Apply feature selection if enabled
         if self.selected_features is not None:
@@ -298,6 +427,10 @@ class AutoMLite:
         X = self._validate_input(X)
         y = self._validate_target(y)
         X_processed = self.preprocessor.transform(X)
+        
+        # Apply auto feature engineering if enabled
+        if self.enable_auto_feature_engineering and hasattr(self, 'feature_engineer'):
+            X_processed = self.feature_engineer.transform(X_processed)
         
         # Apply feature selection if enabled
         if self.selected_features is not None:
@@ -363,6 +496,39 @@ class AutoMLite:
         
         logger.info(f"Model loaded from {path}")
         return self
+    
+    @classmethod
+    def load_model_from_file(cls, path: Union[str, Path]) -> "AutoMLite":
+        """
+        Load a trained model from disk (class method).
+        
+        Args:
+            path: Path to the saved model
+            
+        Returns:
+            Loaded AutoMLite instance
+        """
+        model_data = joblib.load(path)
+        
+        # Create new instance
+        instance = cls()
+        
+        # Load model data
+        instance.best_model = model_data['best_model']
+        instance.best_model_name = model_data['best_model_name']
+        instance.best_score = model_data['best_score']
+        instance.problem_type = model_data['problem_type']
+        instance.preprocessor = model_data['preprocessor']
+        instance.ensemble_model = model_data.get('ensemble_model')
+        instance.selected_features = model_data.get('selected_features')
+        instance.feature_importance = model_data.get('feature_importance')
+        instance.leaderboard = model_data.get('leaderboard')
+        instance.training_history = model_data.get('training_history', [])
+        instance.interpretability_results = model_data.get('interpretability_results')
+        instance.is_fitted = True
+        
+        logger.info(f"Model loaded from {path}")
+        return instance
     
     def generate_report(self, path: Union[str, Path], X_test: Optional[pd.DataFrame] = None, y_test: Optional[np.ndarray] = None) -> None:
         """
@@ -465,6 +631,59 @@ class AutoMLite:
             'top_k_models': self.top_k_models,
             'ensemble_score': ensemble_score,
         }
+    
+    def get_feature_engineering_summary(self) -> Dict[str, Any]:
+        """Get feature engineering summary."""
+        if not self.enable_auto_feature_engineering or not hasattr(self, 'feature_engineer'):
+            return {}
+        
+        return self.feature_engineer.get_feature_summary()
+    
+    def get_deep_learning_summary(self) -> Dict[str, Any]:
+        """Get deep learning model summary."""
+        if not self.enable_deep_learning or self.deep_learning_model is None:
+            return {}
+        
+        return self.deep_learning_model.get_model_summary()
+    
+    def get_time_series_summary(self) -> Dict[str, Any]:
+        """Get time series forecasting summary."""
+        if not self.enable_time_series or not hasattr(self, 'time_series_forecaster'):
+            return {}
+        
+        return self.time_series_forecaster.get_model_summary()
+    
+    def get_experiment_summary(self) -> Dict[str, Any]:
+        """Get experiment tracking summary."""
+        if not self.enable_experiment_tracking or not hasattr(self, 'experiment_tracker'):
+            return {}
+        
+        return self.experiment_tracker.get_experiment_summary()
+    
+    def run_dashboard(self):
+        """Run the interactive dashboard."""
+        if not hasattr(self, 'dashboard'):
+            self.dashboard = AutoMLDashboard("AutoML Lite Dashboard")
+        
+        self.dashboard.run_dashboard()
+    
+    def load_config(self, config_path: str) -> 'AutoMLite':
+        """Load configuration from file."""
+        config = self.config_manager.load_config(config_path)
+        return AutoMLite(config=config)
+    
+    def save_config(self, config_path: str):
+        """Save current configuration to file."""
+        if self.config is not None:
+            self.config_manager.save_config(self.config, config_path)
+    
+    def get_config_template(self, template_name: str) -> AutoMLConfig:
+        """Get configuration template."""
+        return self.config_manager.get_template(template_name)
+    
+    def list_config_templates(self) -> List[str]:
+        """List available configuration templates."""
+        return self.config_manager.list_templates()
     
     def _validate_input(self, X: Union[pd.DataFrame, np.ndarray]) -> pd.DataFrame:
         """Validate and convert input to DataFrame."""

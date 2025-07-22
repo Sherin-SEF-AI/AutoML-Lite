@@ -1,0 +1,44 @@
+cv_folds: 5
+early_stopping_patience: 10
+enable_auto_feature_engineering: true
+enable_early_stopping: true
+enable_ensemble: true
+enable_feature_selection: true
+enable_interpretability: true
+enable_parallel: true
+ensemble_method: stacking
+experiment:
+  enable_tracking: true
+  experiment_name: null
+  log_artifacts: true
+  log_metrics: true
+  log_params: true
+  tracking_backend: mlflow
+feature_engineering:
+  correlation_threshold: 0.95
+  enable_domain_features: true
+  enable_interaction_features: true
+  enable_polynomial_features: true
+  enable_statistical_features: true
+  enable_temporal_features: true
+  max_feature_combinations: 100
+  max_polynomial_degree: 2
+  n_best_features: null
+interpretability:
+  enable_feature_effects: true
+  enable_lime: true
+  enable_partial_dependence: true
+  enable_permutation: true
+  enable_shap: true
+  n_lime_samples: 1000
+  n_permutation_repeats: 10
+  n_shap_samples: 100
+max_models: 15
+memory_limit: null
+models: []
+n_jobs: -1
+problem_type: classification
+random_state: 42
+time_budget: 1800
+top_k_models: 5
+verbose: true

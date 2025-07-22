@@ -1,8 +1,8 @@
+# Core dependencies
 numpy>=1.21.0
 pandas>=1.3.0
 scikit-learn>=1.0.0
 optuna>=3.0.0
-shap>=0.41.0
 matplotlib>=3.5.0
 seaborn>=0.11.0
 joblib>=1.1.0
@@ -11,4 +11,29 @@ jinja2>=3.0.0
 tqdm>=4.62.0
 scipy>=1.7.0
 category-encoders>=2.3.0
-imbalanced-learn>=0.8.0 
+imbalanced-learn>=0.8.0
+
+# Production-ready features - Core
+pyyaml>=6.0
+jsonschema>=4.0.0
+
+# Production-ready features - Optional
+# Uncomment the following lines to enable advanced features:
+
+# Deep Learning
+# tensorflow>=2.8.0
+# torch>=1.12.0
+
+# Time Series
+# statsmodels>=0.13.0
+# prophet>=1.1.0
+
+# Interpretability (SHAP is already included above)
+# lime>=0.2.0
+
+# Experiment Tracking
+# mlflow>=1.28.0
+# wandb>=0.13.0
+
+# Interactive Dashboards
+# streamlit>=1.25.0 
