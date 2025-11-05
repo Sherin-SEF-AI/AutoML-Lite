@@ -36,4 +36,16 @@ jsonschema>=4.0.0
 # wandb>=0.13.0
 
 # Interactive Dashboards
-# streamlit>=1.25.0 
+# streamlit>=1.25.0
+
+# Advanced Features (New)
+# FastAPI for model serving
+fastapi>=0.104.0
+uvicorn>=0.24.0
+pydantic>=2.0.0
+
+# Wavelets for advanced feature engineering
+PyWavelets>=1.4.0
+
+# Additional scipy features
+scipy>=1.7.0
