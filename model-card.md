@@ -254,7 +254,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Contact
 
 - **Author**: Sherin Joseph Roy
-- **Email**: sherin.joseph2217@gmail.com
+- **Email**: sherin@deepmost.ai
+- **Company**: DeepMost AI
+- **Website**: [sherinjosephroy.link](https://sherinjosephroy.link)
+- **LinkedIn**: [linkedin.com/in/sherin-roy-deepmost](https://www.linkedin.com/in/sherin-roy-deepmost)
 - **GitHub**: [https://github.com/Sherin-SEF-AI/AutoML-Lite](https://github.com/Sherin-SEF-AI/AutoML-Lite)
 - **PyPI**: [https://pypi.org/project/automl-lite/](https://pypi.org/project/automl-lite/)
 

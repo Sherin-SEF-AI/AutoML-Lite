@@ -9,10 +9,10 @@ description = "A simplified automated machine learning package with Neural Archi
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
-    {name = "sherin joseph roy", email = "sherin.joseph2217@gmail.com"}
+    {name = "Sherin Joseph Roy", email = "sherin@deepmost.ai"}
 ]
 maintainers = [
-    {name = "sherin joseph roy", email = "sherin.joseph2217@gmail.com"}
+    {name = "Sherin Joseph Roy", email = "sherin@deepmost.ai"}
 ]
 keywords = ["machine-learning", "automl", "scikit-learn", "data-science", "ml"]
 classifiers = [

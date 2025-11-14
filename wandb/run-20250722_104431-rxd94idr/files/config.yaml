@@ -1,0 +1,62 @@
+_wandb:
+    value:
+        cli_version: 0.21.0
+        e:
+            72iwrbv0bs68087q12x5qnip88ys9rqc:
+                codePath: examples/comprehensive_test_all_features.py
+                codePathLocal: examples/comprehensive_test_all_features.py
+                cpu_count: 8
+                cpu_count_logical: 16
+                cudaVersion: "12.9"
+                disk:
+                    /:
+                        total: "502655148032"
+                        used: "176990453760"
+                email: projectsuperx.me@gmail.com
+                executable: /home/vision2030/Desktop/automl-lite/venv/bin/python
+                git:
+                    commit: a3d49de556f4f54f653f48dd8a5c9ce8ab003b54
+                    remote: https://github.com/Sherin-SEF-AI/AutoML-Lite.git
+                gpu: NVIDIA GeForce RTX 4050 Laptop GPU
+                gpu_count: 1
+                gpu_nvidia:
+                    - architecture: Ada
+                      cudaCores: 2560
+                      memoryTotal: "6439305216"
+                      name: NVIDIA GeForce RTX 4050 Laptop GPU
+                      uuid: GPU-5e352b24-9432-e8ba-8528-f706731c78e3
+                host: vision2030-Nitro-ANV15-41
+                memory:
+                    total: "16032813056"
+                os: Linux-6.14.0-24-generic-x86_64-with-glibc2.39
+                program: /home/vision2030/Desktop/automl-lite/examples/comprehensive_test_all_features.py
+                python: CPython 3.12.3
+                root: /home/vision2030/Desktop/automl-lite
+                startedAt: "2025-07-22T05:14:31.361951Z"
+                writerId: 72iwrbv0bs68087q12x5qnip88ys9rqc
+        m: []
+        python_version: 3.12.3
+        t:
+            "1":
+                - 1
+                - 2
+                - 3
+                - 5
+                - 35
+                - 53
+                - 105
+            "2":
+                - 1
+                - 2
+                - 3
+                - 5
+                - 35
+                - 53
+                - 105
+            "3":
+                - 13
+                - 16
+            "4": 3.12.3
+            "5": 0.21.0
+            "12": 0.21.0
+            "13": linux-x86_64

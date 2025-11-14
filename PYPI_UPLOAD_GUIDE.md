@@ -7,9 +7,11 @@ Your AutoML Lite package has been successfully built and validated. Here's every
 ## 📦 Package Information
 
 - **Package Name**: `automl-lite`
-- **Version**: `0.1.0`
-- **Author**: sherin joseph roy
-- **Email**: sherin.joseph2217@gmail.com
+- **Version**: `0.2.0`
+- **Author**: Sherin Joseph Roy
+- **Email**: sherin@deepmost.ai
+- **Company**: DeepMost AI
+- **Website**: [sherinjosephroy.link](https://sherinjosephroy.link)
 - **Repository**: https://github.com/Sherin-SEF-AI/AutoML-Lite
 
 ## 📁 Built Files
@@ -41,7 +43,7 @@ twine upload dist/*
 
 ### 1. Create PyPI Account
 - Go to https://pypi.org/account/register/
-- Create an account with your email: `sherin.joseph2217@gmail.com`
+- Create an account with your email: `sherin@deepmost.ai`
 
 ### 2. Create Test PyPI Account (Optional)
 - Go to https://test.pypi.org/account/register/

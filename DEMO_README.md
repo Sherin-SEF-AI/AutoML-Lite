@@ -154,7 +154,10 @@ GitHub: https://github.com/Sherin-SEF-AI/AutoML-Lite
 - **PyPI Package**: https://pypi.org/project/automl-lite/
 - **GitHub Repository**: https://github.com/Sherin-SEF-AI/AutoML-Lite
 - **Documentation**: https://github.com/Sherin-SEF-AI/AutoML-Lite#readme
-- **Author**: Sherin Joseph Roy (sherin.joseph2217@gmail.com)
+- **Author**: Sherin Joseph Roy
+- **Email**: sherin@deepmost.ai
+- **Company**: DeepMost AI
+- **Website**: [sherinjosephroy.link](https://sherinjosephroy.link)
 
 ## 🎬 Video Demo Script
 

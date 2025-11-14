@@ -1,26 +1,43 @@
 #!/usr/bin/env python3
 """
-Upload AutoML Lite to Hugging Face Spaces with Gradio Demo.
+Upload AutoML Lite to Hugging Face Spaces using the API.
 """
 
 import os
-import shutil
-import subprocess
 import tempfile
 from pathlib import Path
+from huggingface_hub import HfApi, create_repo
 
-def create_huggingface_space():
-    """Create Hugging Face Space with Gradio demo."""
+def create_huggingface_space_api():
+    """Create Hugging Face Space using the API."""
     
-    print("🚀 Creating Hugging Face Space for AutoML Lite")
+    print("🚀 Creating Hugging Face Space for AutoML Lite using API")
     
-    # Create temporary directory for the space
-    with tempfile.TemporaryDirectory() as temp_dir:
-        space_dir = Path(temp_dir) / "automl-lite-demo"
-        space_dir.mkdir()
+    # Initialize API
+    api = HfApi()
+    
+    # Space configuration
+    space_id = "vision2030/automl-lite-demo"
+    
+    try:
+        # Create the space
+        print(f"📦 Creating space: {space_id}")
+        create_repo(
+            repo_id=space_id,
+            repo_type="space",
+            space_sdk="gradio",
+            space_sdk_version="4.0.0",
+            private=False,
+            exist_ok=True
+        )
         
-        # Create app.py (Gradio interface)
-        app_content = '''import gradio as gr
+        # Create temporary directory for the space files
+        with tempfile.TemporaryDirectory() as temp_dir:
+            space_dir = Path(temp_dir) / "automl-lite-demo"
+            space_dir.mkdir()
+            
+            # Create app.py (Gradio interface)
+            app_content = '''import gradio as gr
 import pandas as pd
 import numpy as np
 import tempfile
@@ -242,9 +259,9 @@ with gr.Blocks(title="AutoML Lite Demo", theme=gr.themes.Soft()) as demo:
 if __name__ == "__main__":
     demo.launch()
 '''
-        
-        # Create requirements.txt
-        requirements_content = '''gradio>=4.0.0
+            
+            # Create requirements.txt
+            requirements_content = '''gradio>=4.0.0
 pandas>=1.5.0
 numpy>=1.21.0
 scikit-learn>=1.1.0
@@ -263,9 +280,9 @@ xgboost>=1.6.0
 lightgbm>=3.3.0
 catboost>=1.1.0
 '''
-        
-        # Create README.md
-        readme_content = '''---
+            
+            # Create README.md
+            readme_content = '''---
 title: AutoML Lite Demo
 emoji: 🤖
 colorFrom: blue
@@ -331,44 +348,42 @@ predictions = automl.predict(X)
 print(f"Best score: {automl.best_score}")
 ```
 '''
-        
-        # Write files
-        (space_dir / "app.py").write_text(app_content)
-        (space_dir / "requirements.txt").write_text(requirements_content)
-        (space_dir / "README.md").write_text(readme_content)
-        
-        print(f"📁 Created space files in: {space_dir}")
-        
-        # Upload to Hugging Face
-        print("📤 Uploading to Hugging Face Spaces...")
-        
-        # Change to space directory
-        os.chdir(space_dir)
-        
-        # Initialize git repository
-        subprocess.run(["git", "init"], check=True)
-        subprocess.run(["git", "add", "."], check=True)
-        subprocess.run(["git", "commit", "-m", "Initial commit: AutoML Lite Demo"], check=True)
-        
-        # Add Hugging Face remote
-        subprocess.run([
-            "git", "remote", "add", "origin", 
-            "https://huggingface.co/spaces/vision2030/automl-lite-demo"
-        ], check=True)
-        
-        # Get the current branch name and push
-        result = subprocess.run(["git", "branch", "--show-current"], capture_output=True, text=True, check=True)
-        current_branch = result.stdout.strip()
-        
-        # Push to Hugging Face using the current branch name
-        subprocess.run(["git", "push", "-u", "origin", current_branch], check=True)
-        
-        print("✅ Successfully uploaded to Hugging Face Spaces!")
-        print("🌐 Your demo is available at: https://huggingface.co/spaces/vision2030/automl-lite-demo")
-        
-        # Clean up sample file
-        if os.path.exists(sample_file):
-            os.unlink(sample_file)
+            
+            # Write files
+            (space_dir / "app.py").write_text(app_content)
+            (space_dir / "requirements.txt").write_text(requirements_content)
+            (space_dir / "README.md").write_text(readme_content)
+            
+            print(f"📁 Created space files in: {space_dir}")
+            
+            # Upload files to Hugging Face Space
+            print("📤 Uploading files to Hugging Face Space...")
+            
+            files_to_upload = [
+                ("app.py", space_dir / "app.py"),
+                ("requirements.txt", space_dir / "requirements.txt"),
+                ("README.md", space_dir / "README.md")
+            ]
+            
+            for file_name, file_path in files_to_upload:
+                try:
+                    api.upload_file(
+                        path_or_fileobj=str(file_path),
+                        path_in_repo=file_name,
+                        repo_id=space_id,
+                        repo_type="space"
+                    )
+                    print(f"✅ Uploaded: {file_name}")
+                except Exception as e:
+                    print(f"⚠️ Failed to upload {file_name}: {e}")
+            
+            print("✅ Successfully uploaded to Hugging Face Spaces!")
+            print("🌐 Your demo is available at: https://huggingface.co/spaces/vision2030/automl-lite-demo")
+            
+    except Exception as e:
+        print(f"❌ Error creating Hugging Face Space: {e}")
+        import traceback
+        traceback.print_exc()
 
 if __name__ == "__main__":
-    create_huggingface_space() 
+    create_huggingface_space_api() 

@@ -5,9 +5,9 @@ This package provides end-to-end ML automation with intelligent preprocessing,
 model selection, and hyperparameter optimization.
 """
 
-__version__ = "0.1.1"
-__author__ = "sherin joseph roy"
-__email__ = "sherin.joseph2217@gmail.com"
+__version__ = "0.2.0"
+__author__ = "Sherin Joseph Roy"
+__email__ = "sherin@deepmost.ai"
 
 from .core.automl import AutoMLite
 

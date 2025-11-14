@@ -378,7 +378,7 @@ This release represents a complete, production-ready automated machine learning 
 - **Repository**: https://github.com/Sherin-SEF-AI/AutoML-Lite
 - **Documentation**: https://github.com/Sherin-SEF-AI/AutoML-Lite/wiki
 - **Issues**: https://github.com/Sherin-SEF-AI/AutoML-Lite/issues
-- **Support**: sherin.joseph2217@gmail.com
+- **Support**: sherin@deepmost.ai
 
 ---
 
@@ -462,8 +462,9 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 ## Support
 
 - **Issues**: [GitHub Issues](https://github.com/Sherin-SEF-AI/AutoML-Lite/issues)
-- **Email**: sherin.joseph2217@gmail.com
-- **Documentation**: [GitHub Wiki](https://github.com/Sherin-SEF-AI/AutoML-Lite/wiki)
+- **Email**: sherin@deepmost.ai
+- **Website**: [sherinjosephroy.link](https://sherinjosephroy.link)
+- **LinkedIn**: [linkedin.com/in/sherin-roy-deepmost](https://www.linkedin.com/in/sherin-roy-deepmost)
 
 ---
 

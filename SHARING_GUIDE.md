@@ -6,7 +6,10 @@ This guide provides ready-to-use content for sharing AutoML Lite on various deve
 
 - **PyPI Package**: https://pypi.org/project/automl-lite/
 - **GitHub Repository**: https://github.com/Sherin-SEF-AI/AutoML-Lite
-- **Author**: Sherin Joseph Roy (sherin.joseph2217@gmail.com)
+- **Author**: Sherin Joseph Roy
+- **Email**: sherin@deepmost.ai
+- **Company**: DeepMost AI
+- **Website**: [sherinjosephroy.link](https://sherinjosephroy.link)
 
 ---
 

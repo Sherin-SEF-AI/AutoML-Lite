@@ -1,0 +1,14 @@
+artifact_uri: file:///home/vision2030/Desktop/automl-lite/mlruns/135784614519663382/07683d976b1f4c0e81247c71a1b13f4b/artifacts
+end_time: 1753161513845
+entry_point_name: ''
+experiment_id: '135784614519663382'
+lifecycle_stage: active
+run_id: 07683d976b1f4c0e81247c71a1b13f4b
+run_name: run_20250722_104832
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1753161512676
+status: 3
+tags: []
+user_id: vision2030

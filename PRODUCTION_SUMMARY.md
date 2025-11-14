@@ -3,10 +3,12 @@
 ## 🎉 Successfully Released to PyPI!
 
 **Package**: `automl-lite`  
-**Version**: `0.1.1`  
-**Author**: sherin joseph roy  
-**Email**: sherin.joseph2217@gmail.com  
-**PyPI URL**: https://pypi.org/project/automl-lite/0.1.1/  
+**Version**: `0.2.0`  
+**Author**: Sherin Joseph Roy  
+**Email**: sherin@deepmost.ai  
+**Company**: DeepMost AI  
+**Website**: [sherinjosephroy.link](https://sherinjosephroy.link)  
+**PyPI URL**: https://pypi.org/project/automl-lite/0.2.0/  
 **GitHub**: https://github.com/Sherin-SEF-AI/AutoML-Lite.git  
 
 ## 🚀 Production-Ready Features (100% Success Rate)

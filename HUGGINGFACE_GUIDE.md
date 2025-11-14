@@ -245,7 +245,8 @@ pip install --upgrade gradio
 ## 💬 Support
 
 If you encounter any issues:
-- 📧 **Email**: sherin.joseph2217@gmail.com
+- 📧 **Email**: sherin@deepmost.ai
+- 🌐 **Website**: [sherinjosephroy.link](https://sherinjosephroy.link)
 - 🐛 **GitHub Issues**: [Report Issues](https://github.com/Sherin-SEF-AI/AutoML-Lite/issues)
 - 💬 **Discussions**: [GitHub Discussions](https://github.com/Sherin-SEF-AI/AutoML-Lite/discussions)
 
