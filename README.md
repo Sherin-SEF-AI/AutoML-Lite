@@ -351,7 +351,7 @@ We welcome contributions! Here's how you can help:
 - 🌟 **Star the Repository**: [GitHub](https://github.com/Sherin-SEF-AI/AutoML-Lite)
 - 🐛 **Report Issues**: [Issue Tracker](https://github.com/Sherin-SEF-AI/AutoML-Lite/issues)
 - 💡 **Feature Requests**: [Discussions](https://github.com/Sherin-SEF-AI/AutoML-Lite/discussions)
-- 📧 **Contact**: sherin@deepmost.ai
+- 📧 **Contact**: connect@sherinjosephroy.link
 - 🌐 **Website**: [sherinjosephroy.link](https://sherinjosephroy.link)
 - 💼 **LinkedIn**: [linkedin.com/in/sherin-roy-deepmost](https://www.linkedin.com/in/sherin-roy-deepmost)
 

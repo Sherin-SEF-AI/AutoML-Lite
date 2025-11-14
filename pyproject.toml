@@ -4,15 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "automl-lite"
-version = "0.2.0"
+version = "0.2.1"
 description = "A simplified automated machine learning package with Neural Architecture Search for non-experts"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
-    {name = "Sherin Joseph Roy", email = "sherin@deepmost.ai"}
+    {name = "Sherin Joseph Roy", email = "connect@sherinjosephroy.link"}
 ]
 maintainers = [
-    {name = "Sherin Joseph Roy", email = "sherin@deepmost.ai"}
+    {name = "Sherin Joseph Roy", email = "connect@sherinjosephroy.link"}
 ]
 keywords = ["machine-learning", "automl", "scikit-learn", "data-science", "ml"]
 classifiers = [

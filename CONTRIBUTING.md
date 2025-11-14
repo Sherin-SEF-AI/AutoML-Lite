@@ -464,7 +464,7 @@ Other approaches you've considered
 
 ### Enforcement
 
-Violations will be addressed by project maintainers. Contact sherin@deepmost.ai for concerns.
+Violations will be addressed by project maintainers. Contact connect@sherinjosephroy.link for concerns.
 
 ## Getting Help
 
@@ -473,7 +473,7 @@ Violations will be addressed by project maintainers. Contact sherin@deepmost.ai 
 - **Documentation**: [GitHub Wiki](https://github.com/Sherin-SEF-AI/AutoML-Lite/wiki)
 - **Issues**: [GitHub Issues](https://github.com/Sherin-SEF-AI/AutoML-Lite/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/Sherin-SEF-AI/AutoML-Lite/discussions)
-- **Email**: sherin@deepmost.ai
+- **Email**: connect@sherinjosephroy.link
 - **Website**: [sherinjosephroy.link](https://sherinjosephroy.link)
 
 ### Community Guidelines

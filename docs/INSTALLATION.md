@@ -583,7 +583,7 @@ If you encounter issues not covered here:
    - Python version
    - Error messages
    - Steps to reproduce
-4. **Contact support**: Email sherin@deepmost.ai or visit [sherinjosephroy.link/contact](https://sherinjosephroy.link/contact)
+4. **Contact support**: Email connect@sherinjosephroy.link or visit [sherinjosephroy.link/contact](https://sherinjosephroy.link/contact)
 
 ### Performance Optimization
 

@@ -155,7 +155,7 @@ GitHub: https://github.com/Sherin-SEF-AI/AutoML-Lite
 - **GitHub Repository**: https://github.com/Sherin-SEF-AI/AutoML-Lite
 - **Documentation**: https://github.com/Sherin-SEF-AI/AutoML-Lite#readme
 - **Author**: Sherin Joseph Roy
-- **Email**: sherin@deepmost.ai
+- **Email**: connect@sherinjosephroy.link
 - **Company**: DeepMost AI
 - **Website**: [sherinjosephroy.link](https://sherinjosephroy.link)
 

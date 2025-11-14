@@ -254,7 +254,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Contact
 
 - **Author**: Sherin Joseph Roy
-- **Email**: sherin@deepmost.ai
+- **Email**: connect@sherinjosephroy.link
 - **Company**: DeepMost AI
 - **Website**: [sherinjosephroy.link](https://sherinjosephroy.link)
 - **LinkedIn**: [linkedin.com/in/sherin-roy-deepmost](https://www.linkedin.com/in/sherin-roy-deepmost)

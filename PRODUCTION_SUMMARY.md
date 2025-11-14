@@ -5,7 +5,7 @@
 **Package**: `automl-lite`  
 **Version**: `0.2.0`  
 **Author**: Sherin Joseph Roy  
-**Email**: sherin@deepmost.ai  
+**Email**: connect@sherinjosephroy.link  
 **Company**: DeepMost AI  
 **Website**: [sherinjosephroy.link](https://sherinjosephroy.link)  
 **PyPI URL**: https://pypi.org/project/automl-lite/0.2.0/  
