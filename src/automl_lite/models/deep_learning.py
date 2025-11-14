@@ -61,14 +61,15 @@ class DeepLearningModel:
         batch_size: int = 32,
         epochs: int = 100,
         early_stopping_patience: int = 10,
-        random_state: int = 42
+        random_state: int = 42,
+        architecture: Optional[Any] = None
     ):
         """
         Initialize Deep Learning Model.
         
         Args:
             framework: Deep learning framework ('tensorflow' or 'pytorch')
-            model_type: Type of model ('mlp', 'cnn', 'lstm', 'autoencoder')
+            model_type: Type of model ('mlp', 'cnn', 'lstm', 'autoencoder', 'custom')
             input_shape: Input shape for the model
             output_units: Number of output units
             hidden_layers: List of hidden layer sizes
@@ -78,6 +79,7 @@ class DeepLearningModel:
             epochs: Number of training epochs
             early_stopping_patience: Patience for early stopping
             random_state: Random state for reproducibility
+            architecture: NAS Architecture object for custom models
         """
         self.framework = framework.lower()
         self.model_type = model_type.lower()
@@ -90,6 +92,7 @@ class DeepLearningModel:
         self.epochs = epochs
         self.early_stopping_patience = early_stopping_patience
         self.random_state = random_state
+        self.architecture = architecture
         
         # Model components
         self.model = None
@@ -244,7 +247,9 @@ class DeepLearningModel:
     
     def _build_tensorflow_model(self, input_shape: Tuple):
         """Build TensorFlow model."""
-        if self.model_type == "mlp":
+        if self.model_type == "custom" and self.architecture is not None:
+            self.model = self._build_from_nas_architecture_tensorflow(input_shape)
+        elif self.model_type == "mlp":
             self.model = self._build_mlp_tensorflow(input_shape)
         elif self.model_type == "cnn":
             self.model = self._build_cnn_tensorflow(input_shape)
@@ -254,6 +259,85 @@ class DeepLearningModel:
             self.model = self._build_autoencoder_tensorflow(input_shape)
         else:
             raise ValueError(f"Unsupported model type: {self.model_type}")
+    
+    def _build_from_nas_architecture_tensorflow(self, input_shape: Tuple) -> Model:
+        """Build model from NAS architecture."""
+        if not TENSORFLOW_AVAILABLE:
+            raise ImportError("TensorFlow is required for NAS architecture building")
+        
+        model = Sequential()
+        
+        # Build layers from architecture
+        for i, layer_config in enumerate(self.architecture.layers):
+            layer_type = layer_config.layer_type.lower()
+            params = layer_config.params
+            
+            if layer_type == 'dense':
+                units = params.get('units', 64)
+                activation = params.get('activation', 'relu')
+                
+                if i == 0:
+                    model.add(Dense(units, input_shape=input_shape, activation=activation))
+                else:
+                    model.add(Dense(units, activation=activation))
+                    
+            elif layer_type == 'dropout':
+                rate = params.get('rate', 0.3)
+                model.add(Dropout(rate))
+                
+            elif layer_type == 'batchnormalization' or layer_type == 'batch_normalization':
+                model.add(BatchNormalization())
+                
+            elif layer_type == 'conv2d':
+                filters = params.get('filters', 32)
+                kernel_size = params.get('kernel_size', 3)
+                activation = params.get('activation', 'relu')
+                
+                if i == 0:
+                    model.add(Conv2D(filters, kernel_size, input_shape=input_shape, activation=activation))
+                else:
+                    model.add(Conv2D(filters, kernel_size, activation=activation))
+                    
+            elif layer_type == 'maxpooling2d' or layer_type == 'max_pooling2d':
+                pool_size = params.get('pool_size', 2)
+                model.add(MaxPooling2D(pool_size=pool_size))
+                
+            elif layer_type == 'flatten':
+                model.add(Flatten())
+                
+            elif layer_type == 'lstm':
+                units = params.get('units', 64)
+                return_sequences = params.get('return_sequences', False)
+                
+                if i == 0:
+                    model.add(LSTM(units, input_shape=input_shape, return_sequences=return_sequences))
+                else:
+                    model.add(LSTM(units, return_sequences=return_sequences))
+                    
+            elif layer_type == 'gru':
+                units = params.get('units', 64)
+                return_sequences = params.get('return_sequences', False)
+                
+                if i == 0:
+                    model.add(GRU(units, input_shape=input_shape, return_sequences=return_sequences))
+                else:
+                    model.add(GRU(units, return_sequences=return_sequences))
+        
+        # Add output layer if not already present
+        if not model.layers or model.layers[-1].output_shape[-1] != self.output_units:
+            if self.output_units == 1:
+                model.add(Dense(1, activation='linear'))
+            else:
+                model.add(Dense(self.output_units, activation='softmax'))
+        
+        # Compile model
+        optimizer = Adam(learning_rate=self.learning_rate)
+        if self.output_units == 1:
+            model.compile(optimizer=optimizer, loss='mse', metrics=['mae'])
+        else:
+            model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
+        
+        return model
     
     def _build_mlp_tensorflow(self, input_shape: Tuple) -> Model:
         """Build Multi-Layer Perceptron with TensorFlow."""
@@ -399,10 +483,63 @@ class DeepLearningModel:
     
     def _build_pytorch_model(self, input_shape: Tuple):
         """Build PyTorch model."""
-        if self.model_type == "mlp":
+        if self.model_type == "custom" and self.architecture is not None:
+            self.model = self._build_from_nas_architecture_pytorch(input_shape)
+        elif self.model_type == "mlp":
             self.model = self._build_mlp_pytorch(input_shape)
         else:
             raise ValueError(f"PyTorch support not implemented for {self.model_type}")
+    
+    def _build_from_nas_architecture_pytorch(self, input_shape: Tuple):
+        """Build model from NAS architecture using PyTorch."""
+        if not PYTORCH_AVAILABLE:
+            raise ImportError("PyTorch is required for NAS architecture building")
+        
+        class NASModel(nn.Module):
+            def __init__(self, architecture, input_size, output_size):
+                super(NASModel, self).__init__()
+                self.layers = nn.ModuleList()
+                
+                prev_size = input_size
+                for layer_config in architecture.layers:
+                    layer_type = layer_config.layer_type.lower()
+                    params = layer_config.params
+                    
+                    if layer_type == 'dense':
+                        units = params.get('units', 64)
+                        self.layers.append(nn.Linear(prev_size, units))
+                        prev_size = units
+                        
+                        activation = params.get('activation', 'relu')
+                        if activation == 'relu':
+                            self.layers.append(nn.ReLU())
+                        elif activation == 'tanh':
+                            self.layers.append(nn.Tanh())
+                        elif activation == 'sigmoid':
+                            self.layers.append(nn.Sigmoid())
+                            
+                    elif layer_type == 'dropout':
+                        rate = params.get('rate', 0.3)
+                        self.layers.append(nn.Dropout(rate))
+                        
+                    elif layer_type == 'batchnormalization' or layer_type == 'batch_normalization':
+                        self.layers.append(nn.BatchNorm1d(prev_size))
+                
+                # Add output layer if needed
+                if prev_size != output_size:
+                    self.layers.append(nn.Linear(prev_size, output_size))
+                
+                # Add final activation
+                if output_size > 1:
+                    self.layers.append(nn.Softmax(dim=1))
+            
+            def forward(self, x):
+                for layer in self.layers:
+                    x = layer(x)
+                return x
+        
+        input_size = input_shape[0] if len(input_shape) == 1 else np.prod(input_shape)
+        return NASModel(self.architecture, input_size, self.output_units)
     
     def _build_mlp_pytorch(self, input_shape: Tuple):
         """Build Multi-Layer Perceptron with PyTorch."""

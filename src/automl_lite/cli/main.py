@@ -111,6 +111,54 @@ Examples:
     info_parser = subparsers.add_parser('info', help='Show model information')
     info_parser.add_argument('model', help='Path to trained model file')
     
+    # NAS architecture management commands
+    nas_parser = subparsers.add_parser('nas', help='Neural Architecture Search management')
+    nas_subparsers = nas_parser.add_subparsers(dest='nas_command', help='NAS commands')
+    
+    # NAS list command
+    nas_list_parser = nas_subparsers.add_parser('list', help='List saved architectures')
+    nas_list_parser.add_argument('--problem-type', help='Filter by problem type')
+    nas_list_parser.add_argument('--min-accuracy', type=float, help='Minimum accuracy threshold')
+    nas_list_parser.add_argument('--tags', nargs='+', help='Filter by tags')
+    nas_list_parser.add_argument('--limit', type=int, default=20, help='Maximum number of results')
+    nas_list_parser.add_argument('--repository', default='~/.automl_lite/nas_architectures.db', 
+                                 help='Path to architecture repository')
+    
+    # NAS export command
+    nas_export_parser = nas_subparsers.add_parser('export', help='Export architecture to file')
+    nas_export_parser.add_argument('architecture_id', help='Architecture ID to export')
+    nas_export_parser.add_argument('--output', required=True, help='Output JSON file path')
+    nas_export_parser.add_argument('--include-metadata', action='store_true', default=True,
+                                   help='Include metadata in export')
+    nas_export_parser.add_argument('--repository', default='~/.automl_lite/nas_architectures.db',
+                                   help='Path to architecture repository')
+    
+    # NAS import command
+    nas_import_parser = nas_subparsers.add_parser('import', help='Import architecture from file')
+    nas_import_parser.add_argument('input', help='Input JSON file path')
+    nas_import_parser.add_argument('--validate', action='store_true', default=True,
+                                   help='Validate architecture after import')
+    nas_import_parser.add_argument('--repository', default='~/.automl_lite/nas_architectures.db',
+                                   help='Path to architecture repository')
+    
+    # NAS view command
+    nas_view_parser = nas_subparsers.add_parser('view', help='View architecture details')
+    nas_view_parser.add_argument('architecture_id', help='Architecture ID to view')
+    nas_view_parser.add_argument('--repository', default='~/.automl_lite/nas_architectures.db',
+                                 help='Path to architecture repository')
+    
+    # NAS delete command
+    nas_delete_parser = nas_subparsers.add_parser('delete', help='Delete architecture from repository')
+    nas_delete_parser.add_argument('architecture_id', help='Architecture ID to delete')
+    nas_delete_parser.add_argument('--repository', default='~/.automl_lite/nas_architectures.db',
+                                   help='Path to architecture repository')
+    nas_delete_parser.add_argument('--confirm', action='store_true', help='Skip confirmation prompt')
+    
+    # NAS stats command
+    nas_stats_parser = nas_subparsers.add_parser('stats', help='Show repository statistics')
+    nas_stats_parser.add_argument('--repository', default='~/.automl_lite/nas_architectures.db',
+                                  help='Path to architecture repository')
+    
     return parser
 
 
@@ -655,6 +703,245 @@ def show_model_summary(automl: AutoMLite) -> None:
     console.print(table)
 
 
+def nas_list_architectures(args) -> None:
+    """List saved architectures in the repository."""
+    from ..nas.repository import ArchitectureRepository
+    
+    console.print(f"[bold cyan]Listing architectures from {args.repository}[/bold cyan]")
+    
+    try:
+        with ArchitectureRepository(args.repository) as repo:
+            # List architectures with filters
+            architectures = repo.list_architectures(
+                problem_type=args.problem_type,
+                min_accuracy=args.min_accuracy,
+                tags=args.tags,
+                limit=args.limit
+            )
+            
+            if not architectures:
+                console.print("No architectures found matching the criteria", style="yellow")
+                return
+            
+            # Create table
+            table = Table(title=f"Saved Architectures ({len(architectures)} found)")
+            table.add_column("ID", style="cyan")
+            table.add_column("Problem Type", style="magenta")
+            table.add_column("Samples", justify="right")
+            table.add_column("Features", justify="right")
+            table.add_column("Accuracy", justify="right", style="green")
+            table.add_column("Latency (ms)", justify="right")
+            table.add_column("Size (MB)", justify="right")
+            table.add_column("Created", style="dim")
+            
+            for arch_id, summary in architectures:
+                table.add_row(
+                    arch_id[:12] + "...",
+                    summary.get('problem_type', 'N/A'),
+                    str(summary.get('n_samples', 'N/A')),
+                    str(summary.get('n_features', 'N/A')),
+                    f"{summary.get('accuracy', 0):.4f}" if summary.get('accuracy') else 'N/A',
+                    f"{summary.get('latency_ms', 0):.2f}" if summary.get('latency_ms') else 'N/A',
+                    f"{summary.get('model_size_mb', 0):.2f}" if summary.get('model_size_mb') else 'N/A',
+                    summary.get('created_at', 'N/A')[:10]
+                )
+            
+            console.print(table)
+            console.print(f"✅ Listed {len(architectures)} architecture(s)")
+    
+    except Exception as e:
+        console.print(f"❌ Error listing architectures: {e}", style="bold red")
+        sys.exit(1)
+
+
+def nas_export_architecture(args) -> None:
+    """Export architecture to JSON file."""
+    from ..nas.repository import ArchitectureRepository
+    
+    console.print(f"[bold cyan]Exporting architecture {args.architecture_id[:12]}...[/bold cyan]")
+    
+    try:
+        with ArchitectureRepository(args.repository) as repo:
+            success = repo.export_architecture(
+                args.architecture_id,
+                args.output,
+                include_metadata=args.include_metadata
+            )
+            
+            if success:
+                console.print(f"✅ Architecture exported to {args.output}")
+            else:
+                console.print(f"❌ Failed to export architecture", style="bold red")
+                sys.exit(1)
+    
+    except Exception as e:
+        console.print(f"❌ Error exporting architecture: {e}", style="bold red")
+        sys.exit(1)
+
+
+def nas_import_architecture(args) -> None:
+    """Import architecture from JSON file."""
+    from ..nas.repository import ArchitectureRepository
+    
+    console.print(f"[bold cyan]Importing architecture from {args.input}[/bold cyan]")
+    
+    try:
+        with ArchitectureRepository(args.repository) as repo:
+            architecture = repo.import_architecture(
+                args.input,
+                validate=args.validate,
+                save_to_repository=True
+            )
+            
+            if architecture:
+                console.print(f"✅ Architecture imported successfully: {architecture.id}")
+            else:
+                console.print(f"❌ Failed to import architecture", style="bold red")
+                sys.exit(1)
+    
+    except Exception as e:
+        console.print(f"❌ Error importing architecture: {e}", style="bold red")
+        sys.exit(1)
+
+
+def nas_view_architecture(args) -> None:
+    """View architecture details."""
+    from ..nas.repository import ArchitectureRepository
+    
+    console.print(f"[bold cyan]Viewing architecture {args.architecture_id[:12]}...[/bold cyan]")
+    
+    try:
+        with ArchitectureRepository(args.repository) as repo:
+            result = repo.load_architecture(args.architecture_id)
+            
+            if not result:
+                console.print(f"❌ Architecture not found: {args.architecture_id}", style="bold red")
+                sys.exit(1)
+            
+            architecture, metadata = result
+            
+            # Display architecture details
+            console.print(Panel(f"[bold]Architecture: {architecture.id}[/bold]"))
+            
+            # Basic info
+            console.print("\n[bold]Basic Information:[/bold]")
+            console.print(f"  Layers: {len(architecture.layers)}")
+            console.print(f"  Connections: {len(architecture.connections)}")
+            console.print(f"  Created: {metadata.get('created_at', 'N/A')}")
+            
+            # Dataset metadata
+            if 'dataset_metadata' in metadata:
+                dm = metadata['dataset_metadata']
+                console.print("\n[bold]Dataset:[/bold]")
+                console.print(f"  Problem Type: {dm.get('problem_type', 'N/A')}")
+                console.print(f"  Samples: {dm.get('n_samples', 'N/A')}")
+                console.print(f"  Features: {dm.get('n_features', 'N/A')}")
+                if dm.get('n_classes'):
+                    console.print(f"  Classes: {dm.get('n_classes')}")
+            
+            # Performance metrics
+            if 'performance_metrics' in metadata:
+                pm = metadata['performance_metrics']
+                console.print("\n[bold]Performance:[/bold]")
+                if pm.get('accuracy'):
+                    console.print(f"  Accuracy: {pm['accuracy']:.4f}")
+                if pm.get('val_accuracy'):
+                    console.print(f"  Val Accuracy: {pm['val_accuracy']:.4f}")
+                if pm.get('training_time'):
+                    console.print(f"  Training Time: {pm['training_time']:.2f}s")
+            
+            # Hardware metrics
+            if 'hardware_metrics' in metadata:
+                hm = metadata['hardware_metrics']
+                console.print("\n[bold]Hardware:[/bold]")
+                if hm.get('latency_ms'):
+                    console.print(f"  Latency: {hm['latency_ms']:.2f} ms")
+                if hm.get('memory_mb'):
+                    console.print(f"  Memory: {hm['memory_mb']:.2f} MB")
+                if hm.get('model_size_mb'):
+                    console.print(f"  Model Size: {hm['model_size_mb']:.2f} MB")
+                if hm.get('num_parameters'):
+                    console.print(f"  Parameters: {hm['num_parameters']:,}")
+            
+            # Layers
+            console.print("\n[bold]Layers:[/bold]")
+            for i, layer in enumerate(architecture.layers):
+                console.print(f"  {i}: {layer.layer_type} - {layer.params}")
+            
+            console.print("\n✅ Architecture details displayed")
+    
+    except Exception as e:
+        console.print(f"❌ Error viewing architecture: {e}", style="bold red")
+        sys.exit(1)
+
+
+def nas_delete_architecture(args) -> None:
+    """Delete architecture from repository."""
+    from ..nas.repository import ArchitectureRepository
+    
+    # Confirm deletion
+    if not args.confirm:
+        response = input(f"Are you sure you want to delete architecture {args.architecture_id[:12]}...? (yes/no): ")
+        if response.lower() not in ['yes', 'y']:
+            console.print("❌ Deletion cancelled", style="yellow")
+            return
+    
+    console.print(f"[bold cyan]Deleting architecture {args.architecture_id[:12]}...[/bold cyan]")
+    
+    try:
+        with ArchitectureRepository(args.repository) as repo:
+            success = repo.delete_architecture(args.architecture_id)
+            
+            if success:
+                console.print(f"✅ Architecture deleted successfully")
+            else:
+                console.print(f"❌ Architecture not found", style="bold red")
+                sys.exit(1)
+    
+    except Exception as e:
+        console.print(f"❌ Error deleting architecture: {e}", style="bold red")
+        sys.exit(1)
+
+
+def nas_show_stats(args) -> None:
+    """Show repository statistics."""
+    from ..nas.repository import ArchitectureRepository
+    
+    console.print(f"[bold cyan]Repository Statistics[/bold cyan]")
+    
+    try:
+        with ArchitectureRepository(args.repository) as repo:
+            stats = repo.get_statistics()
+            
+            if not stats:
+                console.print("No statistics available", style="yellow")
+                return
+            
+            # Display statistics
+            console.print(f"\n[bold]Total Architectures:[/bold] {stats.get('total_architectures', 0)}")
+            
+            if stats.get('by_problem_type'):
+                console.print("\n[bold]By Problem Type:[/bold]")
+                for ptype, count in stats['by_problem_type'].items():
+                    console.print(f"  {ptype}: {count}")
+            
+            if stats.get('avg_accuracy'):
+                console.print(f"\n[bold]Average Accuracy:[/bold] {stats['avg_accuracy']:.4f}")
+            if stats.get('max_accuracy'):
+                console.print(f"[bold]Max Accuracy:[/bold] {stats['max_accuracy']:.4f}")
+            
+            if stats.get('top_tags'):
+                console.print("\n[bold]Top Tags:[/bold]")
+                for tag, count in list(stats['top_tags'].items())[:10]:
+                    console.print(f"  {tag}: {count}")
+            
+            console.print("\n✅ Statistics displayed")
+    
+    except Exception as e:
+        console.print(f"❌ Error getting statistics: {e}", style="bold red")
+        sys.exit(1)
+
+
 def main():
     """Main CLI entry point."""
     parser = create_parser()
@@ -682,6 +969,27 @@ def main():
             validate_data(args)
         elif args.command == 'info':
             show_model_info(args)
+        elif args.command == 'nas':
+            # Handle NAS subcommands
+            if not args.nas_command:
+                console.print("❌ No NAS subcommand specified", style="bold red")
+                sys.exit(1)
+            
+            if args.nas_command == 'list':
+                nas_list_architectures(args)
+            elif args.nas_command == 'export':
+                nas_export_architecture(args)
+            elif args.nas_command == 'import':
+                nas_import_architecture(args)
+            elif args.nas_command == 'view':
+                nas_view_architecture(args)
+            elif args.nas_command == 'delete':
+                nas_delete_architecture(args)
+            elif args.nas_command == 'stats':
+                nas_show_stats(args)
+            else:
+                console.print(f"❌ Unknown NAS command: {args.nas_command}", style="bold red")
+                sys.exit(1)
         else:
             console.print(f"❌ Unknown command: {args.command}", style="bold red")
             sys.exit(1)

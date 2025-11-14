@@ -6,7 +6,7 @@ import base64
 import io
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -48,6 +48,7 @@ class ReportGenerator:
         interpretability_results: Optional[Dict[str, Any]] = None,
         X_test: Optional[pd.DataFrame] = None,
         y_test: Optional[np.ndarray] = None,
+        nas_result: Optional[Any] = None,
     ) -> None:
         """
         Generate a comprehensive HTML report.
@@ -59,6 +60,11 @@ class ReportGenerator:
             leaderboard: Model leaderboard
             feature_importance: Feature importance scores
             training_history: Training history
+            ensemble_info: Ensemble information
+            interpretability_results: Model interpretability results
+            X_test: Test features
+            y_test: Test labels
+            nas_result: NAS search results (optional)
         """
         # Create visualizations
         plots = self._create_visualizations(
@@ -66,10 +72,16 @@ class ReportGenerator:
             X_test, y_test
         )
         
+        # Create NAS visualizations if available
+        nas_plots = {}
+        nas_summary = {}
+        if nas_result is not None:
+            nas_plots, nas_summary = self._create_nas_visualizations(nas_result)
+        
         # Generate HTML content
         html_content = self._generate_html_content(
             automl, problem_type, leaderboard, feature_importance, training_history, 
-            ensemble_info, interpretability_results, plots
+            ensemble_info, interpretability_results, plots, nas_plots, nas_summary
         )
         
         # Save report
@@ -422,6 +434,68 @@ class ReportGenerator:
         else:
             return str(obj)
 
+    def _create_nas_visualizations(self, nas_result: Any) -> Tuple[Dict[str, str], Dict[str, Any]]:
+        """
+        Create NAS-specific visualizations.
+        
+        Args:
+            nas_result: NAS search results
+        
+        Returns:
+            Tuple of (plots dict, summary dict)
+        """
+        try:
+            from ..nas.visualization import NASVisualizer
+        except ImportError:
+            logger.warning("NAS visualization module not available")
+            return {}, {}
+        
+        visualizer = NASVisualizer()
+        plots = {}
+        
+        # Architecture diagram for best architecture
+        if hasattr(nas_result, 'best_architecture') and nas_result.best_architecture:
+            try:
+                plots['best_architecture'] = visualizer.render_architecture_diagram(
+                    nas_result.best_architecture,
+                    format='base64'
+                )
+            except Exception as e:
+                logger.warning(f"Failed to create architecture diagram: {e}")
+        
+        # Search progress plot
+        if hasattr(nas_result, 'search_history') and nas_result.search_history:
+            try:
+                plots['search_progress'] = visualizer.create_search_progress_plot(
+                    nas_result.search_history,
+                    format='base64'
+                )
+            except Exception as e:
+                logger.warning(f"Failed to create search progress plot: {e}")
+        
+        # Pareto front plot
+        if hasattr(nas_result, 'pareto_front') and nas_result.pareto_front:
+            try:
+                plots['pareto_front'] = visualizer.create_pareto_front_plot(
+                    nas_result.pareto_front,
+                    format='base64'
+                )
+            except Exception as e:
+                logger.warning(f"Failed to create Pareto front plot: {e}")
+        
+        # Create summary
+        summary = {
+            'search_strategy': getattr(nas_result, 'search_strategy', 'Unknown'),
+            'search_space_type': getattr(nas_result, 'search_space_type', 'Unknown'),
+            'total_architectures_evaluated': getattr(nas_result, 'total_architectures_evaluated', 0),
+            'search_time': getattr(nas_result, 'search_time', 0.0),
+            'best_accuracy': getattr(nas_result, 'best_accuracy', 0.0),
+            'best_latency': getattr(nas_result, 'best_latency', 0.0),
+            'best_model_size': getattr(nas_result, 'best_model_size', 0.0),
+        }
+        
+        return plots, summary
+    
     def _generate_html_content(
         self,
         automl: Any,
@@ -432,6 +506,8 @@ class ReportGenerator:
         ensemble_info: Optional[Dict[str, Any]] = None,
         interpretability_results: Optional[Dict[str, Any]] = None,
         plots: Optional[Dict[str, str]] = None,
+        nas_plots: Optional[Dict[str, str]] = None,
+        nas_summary: Optional[Dict[str, Any]] = None,
     ) -> str:
         """Generate HTML content using template."""
         
@@ -448,6 +524,8 @@ class ReportGenerator:
             'ensemble_info': ensemble_info or {},
             'interpretability_results': interpretability_results or {},
             'plots': plots or {},
+            'nas_plots': nas_plots or {},
+            'nas_summary': nas_summary or {},
             'generation_time': str(pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')),
         }
         template_data = self._sanitize_for_template(template_data)
@@ -751,6 +829,69 @@ class ReportGenerator:
                 <h3>Residuals Analysis</h3>
                 <p>Analysis of prediction errors to assess model quality.</p>
                 <img src="{{ plots.residuals }}" alt="Residuals Analysis">
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        {% if nas_summary and nas_summary.total_architectures_evaluated > 0 %}
+        <div class="section">
+            <h2>🧠 Neural Architecture Search</h2>
+            <div class="summary">
+                <h3>NAS Summary</h3>
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <h3>{{ nas_summary.search_strategy.title() }}</h3>
+                        <p>Search Strategy</p>
+                    </div>
+                    <div class="summary-item">
+                        <h3>{{ nas_summary.total_architectures_evaluated }}</h3>
+                        <p>Architectures Evaluated</p>
+                    </div>
+                    <div class="summary-item">
+                        <h3>{{ "%.2f"|format(nas_summary.search_time) }}s</h3>
+                        <p>Search Time</p>
+                    </div>
+                    <div class="summary-item">
+                        <h3>{{ "%.4f"|format(nas_summary.best_accuracy) }}</h3>
+                        <p>Best Accuracy</p>
+                    </div>
+                    {% if nas_summary.best_latency > 0 %}
+                    <div class="summary-item">
+                        <h3>{{ "%.2f"|format(nas_summary.best_latency) }}ms</h3>
+                        <p>Best Latency</p>
+                    </div>
+                    {% endif %}
+                    {% if nas_summary.best_model_size > 0 %}
+                    <div class="summary-item">
+                        <h3>{{ "%.2f"|format(nas_summary.best_model_size) }}MB</h3>
+                        <p>Best Model Size</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if nas_plots.best_architecture %}
+            <div class="plot-container">
+                <h3>🏗️ Best Architecture</h3>
+                <p>Network diagram of the best discovered architecture.</p>
+                <img src="{{ nas_plots.best_architecture }}" alt="Best Architecture">
+            </div>
+            {% endif %}
+            
+            {% if nas_plots.search_progress %}
+            <div class="plot-container">
+                <h3>📈 Search Progress</h3>
+                <p>Performance improvement over the course of the architecture search.</p>
+                <img src="{{ nas_plots.search_progress }}" alt="Search Progress">
+            </div>
+            {% endif %}
+            
+            {% if nas_plots.pareto_front %}
+            <div class="plot-container">
+                <h3>⚖️ Pareto Front</h3>
+                <p>Multi-objective optimization results showing trade-offs between accuracy, latency, and model size.</p>
+                <img src="{{ nas_plots.pareto_front }}" alt="Pareto Front">
             </div>
             {% endif %}
         </div>

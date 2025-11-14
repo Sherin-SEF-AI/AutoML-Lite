@@ -63,11 +63,15 @@ class AutoMLite:
         enable_deep_learning: bool = False,
         enable_time_series: bool = False,
         enable_experiment_tracking: bool = False,
+        enable_nas: bool = False,
         ensemble_method: str = "voting",
         top_k_models: int = 3,
         early_stopping_patience: int = 10,
         feature_selection_method: str = "mutual_info",
         feature_selection_threshold: float = 0.01,
+        nas_config: Optional[Any] = None,
+        nas_time_budget: int = 3600,
+        nas_search_strategy: str = 'evolutionary',
         config: Optional[AutoMLConfig] = None,
         experiment_tracker: Optional[ExperimentTracker] = None,
     ) -> None:
@@ -89,11 +93,15 @@ class AutoMLite:
             enable_deep_learning: Whether to enable deep learning models
             enable_time_series: Whether to enable time series forecasting
             enable_experiment_tracking: Whether to enable experiment tracking
+            enable_nas: Whether to enable Neural Architecture Search
             ensemble_method: Ensemble method ('voting', 'stacking', 'blending')
             top_k_models: Number of top models to use in ensemble
             early_stopping_patience: Patience for early stopping
             feature_selection_method: Feature selection method
             feature_selection_threshold: Threshold for feature selection
+            nas_config: NAS configuration object
+            nas_time_budget: Time budget for NAS in seconds
+            nas_search_strategy: NAS search strategy ('evolutionary', 'rl', 'darts')
             config: Advanced configuration object
             experiment_tracker: Experiment tracking object
         """
@@ -135,6 +143,7 @@ class AutoMLite:
         self.enable_deep_learning = enable_deep_learning
         self.enable_time_series = enable_time_series
         self.enable_experiment_tracking = enable_experiment_tracking
+        self.enable_nas = enable_nas
         self.feature_selection_method = feature_selection_method
         self.feature_selection_threshold = feature_selection_threshold
         
@@ -163,6 +172,21 @@ class AutoMLite:
             self.experiment_tracker = experiment_tracker or ExperimentTracker()
             self.experiment_manager = ExperimentManager()
         
+        # NAS components
+        if self.enable_nas:
+            from ..nas import NASController, NASConfig
+            
+            self.nas_config = nas_config or NASConfig(
+                search_strategy=nas_search_strategy,
+                time_budget=nas_time_budget,
+                verbose=verbose
+            )
+            self.nas_controller = NASController(
+                config=self.nas_config,
+                experiment_tracker=self.experiment_tracker if self.enable_experiment_tracking else None
+            )
+            self.nas_result = None
+        
         # Configuration management
         self.config_manager = ConfigManager()
         
@@ -179,6 +203,7 @@ class AutoMLite:
         self.ensemble_model = None
         self.selected_features = None
         self.interpretability_results = None
+        self.nas_result = None if not self.enable_nas else None
         
         # Set random seeds
         np.random.seed(random_state)
@@ -188,7 +213,8 @@ class AutoMLite:
             logger.info(f"Advanced features: Ensemble={enable_ensemble}, "
                        f"Early Stopping={enable_early_stopping}, "
                        f"Feature Selection={enable_feature_selection}, "
-                       f"Interpretability={enable_interpretability}")
+                       f"Interpretability={enable_interpretability}, "
+                       f"NAS={enable_nas}")
     
     def fit(
         self,
@@ -277,8 +303,45 @@ class AutoMLite:
                 logger.info("Training time series forecaster...")
             self.time_series_forecaster.fit(self.best_model, X_processed, y)
         
-        # Deep learning models
-        if self.enable_deep_learning:
+        # Neural Architecture Search
+        if self.enable_nas and self.enable_deep_learning:
+            if self.verbose:
+                logger.info("Starting Neural Architecture Search...")
+            
+            # Run NAS
+            self.nas_result = self.nas_controller.search(
+                X_processed, y,
+                problem_type=self.problem_type
+            )
+            
+            # Use best architecture from NAS for final model
+            if self.nas_result.best_architecture:
+                if self.verbose:
+                    logger.info(f"NAS completed. Best architecture found with "
+                              f"{self.nas_result.best_architecture.get_num_layers()} layers")
+                
+                # Build model from best architecture
+                nas_model = self._build_model_from_architecture(
+                    self.nas_result.best_architecture,
+                    X_processed,
+                    y
+                )
+                
+                # Compare NAS model with best traditional model
+                if nas_model is not None:
+                    nas_score = self._evaluate_model(nas_model, X_processed, y)
+                    
+                    # Use NAS model if it's better
+                    if self._is_nas_model_better(nas_score, self.best_score):
+                        self.best_model = nas_model
+                        self.best_model_name = f"NAS_{self.nas_result.best_architecture.id[:8]}"
+                        self.best_score = nas_score
+                        
+                        if self.verbose:
+                            logger.info(f"NAS model selected as best model with score: {nas_score:.4f}")
+        
+        # Deep learning models (if NAS not enabled)
+        elif self.enable_deep_learning:
             if self.verbose:
                 logger.info("Training deep learning model...")
             self.deep_learning_model = DeepLearningModel(
@@ -311,6 +374,11 @@ class AutoMLite:
                 'feature_importance': self.feature_importance
             }
             self.experiment_tracker.log_automl_results(experiment_results)
+            
+            # Log NAS results if available
+            if self.enable_nas and self.nas_result is not None:
+                self._log_nas_to_experiment_tracker()
+            
             self.experiment_tracker.end_run()
         
         self.is_fitted = True
@@ -464,6 +532,7 @@ class AutoMLite:
             'leaderboard': self.leaderboard,
             'training_history': self.training_history,
             'interpretability_results': self.interpretability_results,
+            'nas_result': self.nas_result if self.enable_nas else None,
         }
         
         joblib.dump(model_data, path)
@@ -492,6 +561,7 @@ class AutoMLite:
         self.leaderboard = model_data.get('leaderboard')
         self.training_history = model_data.get('training_history', [])
         self.interpretability_results = model_data.get('interpretability_results')
+        self.nas_result = model_data.get('nas_result')
         self.is_fitted = True
         
         logger.info(f"Model loaded from {path}")
@@ -525,6 +595,7 @@ class AutoMLite:
         instance.leaderboard = model_data.get('leaderboard')
         instance.training_history = model_data.get('training_history', [])
         instance.interpretability_results = model_data.get('interpretability_results')
+        instance.nas_result = model_data.get('nas_result')
         instance.is_fitted = True
         
         logger.info(f"Model loaded from {path}")
@@ -659,6 +730,22 @@ class AutoMLite:
             return {}
         
         return self.experiment_tracker.get_experiment_summary()
+    
+    def get_nas_summary(self) -> Dict[str, Any]:
+        """Get NAS summary."""
+        if not self.enable_nas or self.nas_result is None:
+            return {}
+        
+        return {
+            'search_strategy': self.nas_result.search_strategy,
+            'search_space_type': self.nas_result.search_space_type,
+            'total_architectures_evaluated': self.nas_result.total_architectures_evaluated,
+            'search_time': self.nas_result.search_time,
+            'best_accuracy': self.nas_result.best_accuracy,
+            'best_latency': self.nas_result.best_latency,
+            'best_model_size': self.nas_result.best_model_size,
+            'pareto_front_size': len(self.nas_result.pareto_front) if self.nas_result.pareto_front else 0,
+        }
     
     def run_dashboard(self):
         """Run the interactive dashboard."""
@@ -912,4 +999,205 @@ class AutoMLite:
         
         except Exception as e:
             logger.warning(f"SHAP interpretability failed: {str(e)}")
-            return {} 
+            return {}
+    
+    def _build_model_from_architecture(
+        self,
+        architecture: Any,
+        X: pd.DataFrame,
+        y: pd.Series
+    ) -> Optional[BaseEstimator]:
+        """
+        Build a model from NAS architecture.
+        
+        Args:
+            architecture: Architecture object from NAS
+            X: Training features
+            y: Training targets
+            
+        Returns:
+            Trained model or None if build fails
+        """
+        try:
+            # Import here to avoid dependency issues
+            from ..models.deep_learning import DeepLearningModel
+            
+            # Determine output units
+            if self.problem_type == "classification":
+                output_units = len(np.unique(y))
+            else:
+                output_units = 1
+            
+            # Create deep learning model with NAS architecture
+            model = DeepLearningModel(
+                framework="tensorflow",
+                model_type="custom",
+                output_units=output_units,
+                architecture=architecture
+            )
+            
+            # Train the model
+            model.fit(X, y)
+            
+            return model
+            
+        except Exception as e:
+            logger.warning(f"Failed to build model from NAS architecture: {str(e)}")
+            return None
+    
+    def _evaluate_model(
+        self,
+        model: BaseEstimator,
+        X: pd.DataFrame,
+        y: pd.Series
+    ) -> float:
+        """
+        Evaluate a model's performance.
+        
+        Args:
+            model: Model to evaluate
+            X: Features
+            y: Targets
+            
+        Returns:
+            Performance score
+        """
+        try:
+            from sklearn.model_selection import cross_val_score
+            from sklearn.metrics import accuracy_score, mean_squared_error
+            
+            if self.problem_type == "classification":
+                # Use cross-validation for classification
+                scores = cross_val_score(
+                    model, X, y,
+                    cv=min(3, self.cv_folds),
+                    scoring='accuracy',
+                    n_jobs=self.n_jobs
+                )
+                return scores.mean()
+            else:
+                # Use cross-validation for regression
+                scores = cross_val_score(
+                    model, X, y,
+                    cv=min(3, self.cv_folds),
+                    scoring='neg_mean_squared_error',
+                    n_jobs=self.n_jobs
+                )
+                return -scores.mean()  # Return positive MSE
+                
+        except Exception as e:
+            logger.warning(f"Model evaluation failed: {str(e)}")
+            # Fallback to simple train score
+            try:
+                return model.score(X, y)
+            except:
+                return 0.0
+    
+    def _is_nas_model_better(self, nas_score: float, traditional_score: Optional[float]) -> bool:
+        """
+        Determine if NAS model is better than traditional model.
+        
+        Args:
+            nas_score: NAS model score
+            traditional_score: Traditional model score
+            
+        Returns:
+            True if NAS model is better
+        """
+        if traditional_score is None:
+            return True
+        
+        if self.problem_type == "classification":
+            # Higher is better for classification
+            return nas_score > traditional_score
+        else:
+            # Lower is better for regression (MSE)
+            return nas_score < traditional_score
+    
+    def _log_nas_to_experiment_tracker(self) -> None:
+        """Log NAS results to experiment tracker."""
+        if not self.experiment_tracker or not self.nas_result:
+            return
+        
+        try:
+            # Log NAS configuration parameters
+            nas_params = {
+                'nas_search_strategy': self.nas_result.search_strategy,
+                'nas_search_space_type': self.nas_result.search_space_type,
+                'nas_time_budget': self.nas_config.time_budget,
+                'nas_max_architectures': self.nas_config.max_architectures,
+                'nas_enable_hardware_aware': self.nas_config.enable_hardware_aware,
+                'nas_enable_multi_objective': self.nas_config.enable_multi_objective,
+            }
+            self.experiment_tracker.log_params(nas_params)
+            
+            # Log NAS metrics
+            nas_metrics = {
+                'nas_total_architectures_evaluated': self.nas_result.total_architectures_evaluated,
+                'nas_search_time': self.nas_result.search_time,
+            }
+            
+            if self.nas_result.best_accuracy is not None:
+                nas_metrics['nas_best_accuracy'] = self.nas_result.best_accuracy
+            
+            if self.nas_result.best_latency is not None:
+                nas_metrics['nas_best_latency'] = self.nas_result.best_latency
+            
+            if self.nas_result.best_model_size is not None:
+                nas_metrics['nas_best_model_size'] = self.nas_result.best_model_size
+            
+            if self.nas_result.pareto_front:
+                nas_metrics['nas_pareto_front_size'] = len(self.nas_result.pareto_front)
+            
+            self.experiment_tracker.log_metrics(nas_metrics)
+            
+            # Log all evaluated architectures
+            if self.nas_config.log_all_architectures:
+                for i, arch in enumerate(self.nas_result.all_architectures[:10]):  # Log first 10
+                    arch_metrics = {
+                        f'nas_arch_{i}_num_layers': arch.get_num_layers(),
+                    }
+                    
+                    # Log performance metrics
+                    acc = arch.get_performance_metric('accuracy')
+                    if acc is not None:
+                        arch_metrics[f'nas_arch_{i}_accuracy'] = acc
+                    
+                    mse = arch.get_performance_metric('mse')
+                    if mse is not None:
+                        arch_metrics[f'nas_arch_{i}_mse'] = mse
+                    
+                    # Log hardware metrics
+                    latency = arch.get_hardware_metric('latency_ms')
+                    if latency is not None:
+                        arch_metrics[f'nas_arch_{i}_latency_ms'] = latency
+                    
+                    memory = arch.get_hardware_metric('memory_mb')
+                    if memory is not None:
+                        arch_metrics[f'nas_arch_{i}_memory_mb'] = memory
+                    
+                    self.experiment_tracker.log_metrics(arch_metrics)
+            
+            # Save best architecture as artifact
+            if self.nas_result.best_architecture:
+                import json
+                import tempfile
+                import os
+                
+                arch_dict = self.nas_result.best_architecture.to_dict()
+                
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+                    json.dump(arch_dict, f, indent=2)
+                    temp_path = f.name
+                
+                try:
+                    self.experiment_tracker.log_artifact(temp_path, 'best_nas_architecture.json')
+                finally:
+                    if os.path.exists(temp_path):
+                        os.remove(temp_path)
+            
+            if self.verbose:
+                logger.info("NAS results logged to experiment tracker")
+                
+        except Exception as e:
+            logger.warning(f"Failed to log NAS results to experiment tracker: {str(e)}") 

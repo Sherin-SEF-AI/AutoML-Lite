@@ -12,6 +12,7 @@ tags:
 - automl
 - machine-learning
 - deep-learning
+- neural-architecture-search
 - time-series
 - classification
 - regression
@@ -19,6 +20,8 @@ tags:
 - interpretability
 - experiment-tracking
 - production
+- hardware-aware
+- multi-objective
 ---
 
 # AutoML Lite 🤖
@@ -70,9 +73,11 @@ predictions = automl.predict(new_data)
 - **Smart Model Selection**: Tests 15+ algorithms automatically
 - **Hyperparameter Optimization**: Uses Optuna for efficient tuning
 - **Ensemble Methods**: Automatic voting classifiers
+- **Neural Architecture Search (NAS)**: Automatically discover optimal neural network architectures
 
 ### 🏭 Production-Ready
 - **Deep Learning**: TensorFlow and PyTorch integration
+- **Neural Architecture Search**: Automated architecture discovery with hardware-aware optimization
 - **Time Series**: ARIMA, Prophet, LSTM forecasting
 - **Advanced Interpretability**: SHAP, LIME, permutation importance
 - **Experiment Tracking**: MLflow, W&B, TensorBoard
@@ -83,6 +88,7 @@ predictions = automl.predict(new_data)
 - **Model Performance Analysis**: Confusion matrices, ROC curves
 - **Feature Importance**: Detailed analysis and correlations
 - **Training History**: Complete logs and metrics
+- **NAS Visualizations**: Architecture diagrams and Pareto front exploration
 
 ## 🎯 Supported Problem Types
 
@@ -90,6 +96,77 @@ predictions = automl.predict(new_data)
 - ✅ **Regression**
 - ✅ **Time Series Forecasting**
 - ✅ **Deep Learning Tasks**
+
+## 🧠 Neural Architecture Search (NAS)
+
+AutoML Lite includes state-of-the-art Neural Architecture Search capabilities to automatically discover optimal neural network architectures for your specific problem.
+
+### Key NAS Features
+
+- **Multiple Search Strategies**
+  - Evolutionary algorithms (genetic search)
+  - Reinforcement learning (REINFORCE)
+  - Gradient-based (DARTS)
+
+- **Hardware-Aware Optimization**
+  - Mobile deployment constraints
+  - Edge device optimization
+  - Latency and memory profiling
+  - Model size optimization
+
+- **Multi-Objective Optimization**
+  - Balance accuracy, latency, and model size
+  - Pareto front exploration
+  - Custom objective weights
+  - Hard constraint satisfaction
+
+- **Transfer Learning**
+  - Architecture repository
+  - Similarity-based retrieval
+  - Architecture adaptation
+  - Knowledge accumulation
+
+### Quick NAS Example
+
+```python
+from automl_lite import AutoMLite
+from automl_lite.nas import NASConfig
+
+# Configure NAS
+config = NASConfig(
+    search_strategy='evolutionary',
+    time_budget=1800,  # 30 minutes
+    enable_hardware_aware=True,
+    target_hardware='mobile',
+    max_latency_ms=100
+)
+
+# Run NAS
+automl = AutoMLite(
+    enable_deep_learning=True,
+    enable_nas=True,
+    nas_config=config
+)
+
+automl.fit(X_train, y_train)
+
+# Explore results
+print(f"Best accuracy: {automl.nas_result.best_accuracy:.3f}")
+print(f"Architectures evaluated: {automl.nas_result.total_architectures_evaluated}")
+
+# Get Pareto front for multi-objective optimization
+for arch in automl.nas_result.pareto_front:
+    print(f"Accuracy: {arch.metadata['accuracy']:.3f}, "
+          f"Latency: {arch.metadata['latency']:.1f}ms, "
+          f"Size: {arch.metadata['model_size']:.1f}MB")
+```
+
+### NAS Use Cases
+
+- **Mobile Apps**: Find architectures that run efficiently on smartphones
+- **Edge Devices**: Optimize for IoT and embedded systems
+- **Production Systems**: Balance accuracy with inference speed
+- **Research**: Discover novel architectures for specific domains
 
 ## 🔥 Performance Metrics
 
@@ -126,10 +203,38 @@ forecast = automl.predict_future(periods=30)
 ### Deep Learning
 ```python
 automl = AutoMLite(
-    include_deep_learning=True,
+    enable_deep_learning=True,
     deep_learning_framework='tensorflow'
 )
 model = automl.fit(data, target_column='target')
+```
+
+### Neural Architecture Search (NAS)
+```python
+from automl_lite.nas import NASConfig
+
+# Basic NAS
+automl = AutoMLite(
+    enable_deep_learning=True,
+    enable_nas=True,
+    nas_time_budget=1800  # 30 minutes
+)
+model = automl.fit(data, target_column='target')
+
+# Hardware-aware NAS for mobile deployment
+config = NASConfig(
+    search_strategy='evolutionary',
+    enable_hardware_aware=True,
+    target_hardware='mobile',
+    max_latency_ms=100,
+    max_memory_mb=50
+)
+automl = AutoMLite(enable_nas=True, nas_config=config)
+model = automl.fit(data, target_column='target')
+
+# Access NAS results
+print(f"Best architecture accuracy: {automl.nas_result.best_accuracy:.3f}")
+print(f"Pareto front size: {len(automl.nas_result.pareto_front)}")
 ```
 
 ## 📈 CLI Interface
@@ -197,11 +302,24 @@ automl.plot_partial_dependence('feature_name')
 pip install automl-lite
 ```
 
+### With Neural Architecture Search (NAS)
+```bash
+pip install automl-lite[nas]
+```
+
+This installs additional dependencies for NAS:
+- `networkx` - Architecture graph operations
+- `pygraphviz` - Architecture visualization
+- `pymoo` - Multi-objective optimization
+
 ### From Source
 ```bash
 git clone https://github.com/Sherin-SEF-AI/AutoML-Lite.git
 cd AutoML-Lite
 pip install -e .
+
+# With NAS support
+pip install -e ".[nas]"
 ```
 
 ## 🤝 Contributing
@@ -218,7 +336,14 @@ We welcome contributions! Here's how you can help:
 
 - 📖 **Full Documentation**: [GitHub Wiki](https://github.com/Sherin-SEF-AI/AutoML-Lite/wiki)
 - 🎯 **API Reference**: [API Docs](https://github.com/Sherin-SEF-AI/AutoML-Lite/blob/main/docs/API_REFERENCE.md)
+- 🧠 **NAS Documentation**: 
+  - [NAS API Reference](https://github.com/Sherin-SEF-AI/AutoML-Lite/blob/main/docs/NAS_API_REFERENCE.md)
+  - [NAS User Guide](https://github.com/Sherin-SEF-AI/AutoML-Lite/blob/main/docs/NAS_USER_GUIDE.md)
 - 📝 **Examples**: [Example Notebooks](https://github.com/Sherin-SEF-AI/AutoML-Lite/tree/main/examples)
+  - [Basic NAS Example](https://github.com/Sherin-SEF-AI/AutoML-Lite/blob/main/examples/nas_basic_example.py)
+  - [Hardware-Aware NAS](https://github.com/Sherin-SEF-AI/AutoML-Lite/blob/main/examples/nas_hardware_aware_example.py)
+  - [Multi-Objective NAS](https://github.com/Sherin-SEF-AI/AutoML-Lite/blob/main/examples/nas_multi_objective_example.py)
+  - [Transfer Learning NAS](https://github.com/Sherin-SEF-AI/AutoML-Lite/blob/main/examples/nas_transfer_learning_example.py)
 - 🚀 **Quick Start**: [Installation Guide](https://github.com/Sherin-SEF-AI/AutoML-Lite/blob/main/docs/INSTALLATION.md)
 
 ## 💬 Join the Community
@@ -236,6 +361,8 @@ We welcome contributions! Here's how you can help:
 | **Configuration** | Zero required | Complex configs |
 | **Production Ready** | ✅ Built-in | ❌ Manual setup |
 | **Deep Learning** | ✅ Integrated | ❌ Separate setup |
+| **Neural Architecture Search** | ✅ Built-in | ❌ Not available |
+| **Hardware-Aware NAS** | ✅ Mobile/Edge support | ❌ Not available |
 | **Time Series** | ✅ Native support | ❌ Limited |
 | **Interpretability** | ✅ Advanced | ❌ Basic |
 | **Experiment Tracking** | ✅ Multi-platform | ❌ Limited |
@@ -255,4 +382,4 @@ pip install automl-lite
 
 *Built with ❤️ by the AutoML Lite community*
 
-**Tags**: #python #machinelearning #automl #datascience #ml #ai #automation #productivity #opensource #deeplearning #timeseries #interpretability #experimenttracking #production #deployment 
+**Tags**: #python #machinelearning #automl #datascience #ml #ai #automation #productivity #opensource #deeplearning #timeseries #interpretability #experimenttracking #production #deployment #nas #neuralarchitecturesearch #hardwareaware #multiobjective #transferlearning 
